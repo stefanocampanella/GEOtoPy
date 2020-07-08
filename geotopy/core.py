@@ -4,6 +4,7 @@ import subprocess
 from . import geotop_exe
 import string
 
+
 class GEOtop:
     def __init__(self, src, dest=None, replace=None):
 

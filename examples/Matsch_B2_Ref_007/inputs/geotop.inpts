@@ -54,8 +54,11 @@ HorizonMeteoStationFile = "horizon"
 HeaderHorizonAngle = "AngleFromNorthClockwise"
 HeaderHorizonHeight = "HorizonHeight"
  
-! Output files 
-PointOutputFile = "output/point" 
+! Output files
+PointAll = 1
+PointOutputFile = "output/point"
+
+SoilAll = 1
 SoilLiqContentProfileFile = "output/thetaliq" 
 SoilIceContentProfileFile = "output/thetaice" 
 

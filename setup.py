@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="geotopy", # Replace with your own username
+    name="geotopy",  # Replace with your own username
     version="0.0.1",
     author="Stefano Campanella",
     author_email="scampane[at]sissa.it",
