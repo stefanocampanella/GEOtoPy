@@ -1,12 +1,16 @@
 import argparse
-import geotopy.core as gtp
+import tempfile
+import geotopy as gtp
 
-parser = argparse.ArgumentParser(prog="GEOtoPy", description="Simple GEOtop launcher.")
-parser.add_argument("working_directory")
+parser = argparse.ArgumentParser(prog="GEOtoPy",
+                                 description="Simple GEOtop launcher.")
+parser.add_argument("inputs_dir")
 args = parser.parse_args()
 
-try:
-    model = gtp.GEOtop(args.working_directory)
-    model.run()
-except Exception:
-    raise
+with tempfile.TemporaryDirectory() as tmpdir:
+    try:
+        model = gtp.GEOtop(args.inputs_dir, working_dir=tmpdir)
+        print(f"Running GEOtop...")
+        model.run(check=True)
+    except Exception:
+        raise

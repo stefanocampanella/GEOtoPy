@@ -58,9 +58,9 @@ HeaderHorizonHeight = "HorizonHeight"
 PointAll = 1
 PointOutputFile = "output/point"
 
-SoilAll = 1
-SoilLiqContentProfileFile = "output/thetaliq" 
-SoilIceContentProfileFile = "output/thetaice" 
+!SoilAll = 1
+!SoilLiqContentProfileFile = "output/thetaliq" 
+!SoilIceContentProfileFile = "output/thetaice" 
 
 ! Point settings 
 CoordinatePointX = 620815
