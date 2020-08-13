@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Stefano Campanella",
     author_email="scampane@sissa.it",
-    description="A calibration tool for GEOtop",
+    description="Paper-thin wrapper to work with GEOtop from Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/stefanocampanella/GEOtoPy",
