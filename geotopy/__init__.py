@@ -21,7 +21,6 @@ import os
 import shutil
 import subprocess
 import warnings
-import string
 
 # Checks for default geotop executable, if not found prompts a warning
 if path := shutil.which('geotop'):
@@ -40,19 +39,13 @@ class GEOtop:
     Attributes:
         inputs_dir : path
             The path of the inputs dir, must be a readable directory
-        working_dir : path
-            The path of the working dir, must be a writable directory
-            (default is inputs_dir)
-        replace : dict
-            Contains the replacement rules to apply to the template file.
-            (default is None)
         exe : path
             The path of the `geotop` executable
             (default is geotopy._geotop_exe)
     """
     # The constructor just checks the preconditions on files and
     # directories pointed by the arguments
-    def __init__(self, inputs_dir, exe=None, working_dir=None, replace=None):
+    def __init__(self, inputs_dir, exe=None, run_args=None):
         # inputs_dir must be a readable directory
         if not os.path.isdir(inputs_dir):
             raise FileNotFoundError(f"{inputs_dir} does not exist.")
@@ -61,33 +54,12 @@ class GEOtop:
         else:
             self.inputs_dir = inputs_dir
 
-        # working_dir must be a writable directory
-        working_dir = working_dir if working_dir else inputs_dir
-        if not os.path.isdir(working_dir):
-            raise FileNotFoundError(f"{working_dir} does not exist.")
-        elif not os.access(working_dir, os.W_OK):
-            raise PermissionError(f"{working_dir} is not writable.")
-        else:
-            self.working_dir = working_dir
-
-        # If replace is set the inputs_dir must contain a readable template file
-        if replace:
-            template_path = os.path.join(inputs_dir, 'geotop.inpts.template')
-            if not os.path.isfile(template_path):
-                raise FileNotFoundError(f"{template_path} does not exist.")
-            elif not os.access(exe, os.R_OK):
-                raise PermissionError(f"{template_path} is not readable.")
-            else:
-                self.replace = replace
-        # Otherwise it must contain a readable input file
-        else:
-            inputs_path = os.path.join(inputs_dir, 'geotop.inpts')
-            if not os.path.isfile(inputs_path):
-                raise FileNotFoundError(f"{inputs_path} does not exist.")
-            elif not os.access(inputs_path, os.R_OK):
-                raise PermissionError(f"{inputs_path} is not readable.")
-            else:
-                self.replace = None
+        # and must contain a readable 'geotop.inpts' file
+        inputs_path = os.path.join(inputs_dir, 'geotop.inpts')
+        if not os.path.isfile(inputs_path):
+            raise FileNotFoundError(f"{inputs_path} does not exist.")
+        elif not os.access(inputs_path, os.R_OK):
+            raise PermissionError(f"{inputs_path} is not readable.")
 
         # exe must be an executable file (but there are no checks
         # that is indeed a geotop executable)
@@ -99,17 +71,31 @@ class GEOtop:
         else:
             self.exe = exe
 
-    def run(self, **kwargs):
-        # Copies the content of inputs_dir into working_dir
-        shutil.copytree(self.inputs_dir, self.working_dir, dirs_exist_ok=True)
+        self.run_args = \
+            run_args if run_args else {'check': True, 'capture_output': True}
 
-        # If replace is set, then fills the template inputs file
-        if self.replace:
-            with open(self.template_path, "r") as template_file, \
-                    open(self.inputs_path, "w") as inputs_file:
-                inputs_template = string.Template(template_file.read())
-                inputs = inputs_template.substitute(self.replace)
-                inputs_file.write(inputs)
+    def preprocess(self, working_dir, *args, **kwargs):
+        pass
 
-        # Finally runs the model
-        subprocess.run([self.exe, self.working_dir], **kwargs)
+    def postprocess(self, working_dir):
+        pass
+
+    def eval(self, *args, working_dir=None, **kwargs):
+        # working_dir must be a writable directory
+        working_dir = working_dir if working_dir else self.inputs_dir
+        if not os.path.isdir(working_dir):
+            raise FileNotFoundError(f"{working_dir} does not exist.")
+        elif not os.access(working_dir, os.W_OK):
+            raise PermissionError(f"{working_dir} is not writable.")
+        else:
+            # Copies the content of inputs_dir into working_dir
+            shutil.copytree(self.inputs_dir, working_dir, dirs_exist_ok=True)
+
+        # Pre-process step
+        self.preprocess(working_dir, *args, **kwargs)
+
+        # runs the model
+        subprocess.run([self.exe, working_dir], **self.run_args)
+
+        # Post-process step
+        self.postprocess(working_dir)
