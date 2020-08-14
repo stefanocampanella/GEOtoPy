@@ -75,10 +75,10 @@ class GEOtop:
             run_args if run_args else {'check': True, 'capture_output': True}
 
     def preprocess(self, working_dir, *args, **kwargs):
-        pass
+        raise NotImplementedError
 
     def postprocess(self, working_dir):
-        pass
+        raise NotImplementedError
 
     def eval(self, *args, working_dir=None, **kwargs):
         # working_dir must be a writable directory
@@ -91,11 +91,13 @@ class GEOtop:
             # Copies the content of inputs_dir into working_dir
             shutil.copytree(self.inputs_dir, working_dir, dirs_exist_ok=True)
 
-        # Pre-process step
+        # Pre-process step prepares, takes the inputs and prepare input files
         self.preprocess(working_dir, *args, **kwargs)
 
-        # runs the model
+        # Run step, it communicates with prev and next step via files
         subprocess.run([self.exe, working_dir], **self.run_args)
 
-        # Post-process step
-        self.postprocess(working_dir)
+        # Post-process step, read files from prev step and returns the output
+        output = self.postprocess(working_dir)
+
+        return output
