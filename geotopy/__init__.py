@@ -16,11 +16,14 @@ executable for each simulation, as an optional argument.
     model = GEOtop("path/to/inputs")
     model.run()
 """
-
 import os
+import re
+import json
+from collections.abc import MutableMapping
 import shutil
 import subprocess
 import warnings
+import importlib.resources as resources
 
 # Checks for default geotop executable, if not found prompts a warning
 if path := shutil.which('geotop'):
@@ -32,8 +35,62 @@ else:
     warnings.warn("Default GEOTop executable not found, check your installation",
                   RuntimeWarning)
 
+# Load keywords type dictionary
 
-class GEOtop:
+with resources.open_text(__name__, 'keywords.json') as keywords_file:
+    keywords = json.load(keywords_file)
+
+_comment_re = re.compile(r'\s*!.*\n|\s+')
+_setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)\n')
+
+
+def read_setting(line):
+    if match := _setting_re.match(line):
+        key, value = match.groups()
+    else:
+        raise ValueError(f"{line} is not a valid setting.")
+
+    if key not in keywords:
+        raise ValueError(f"Unknown keyword {key}.")
+    else:
+        keyword_type = keywords[key]
+        if keyword_type == 'number':
+            value = float(value)
+        elif keyword_type == 'array':
+            value = [float(n) for n in value.split(',')]
+        elif keyword_type == 'bool':
+            value = True if int(value) == 1 else False
+        elif keyword_type == 'int':
+            value = int(value)
+        elif keyword_type == 'string':
+            value = str(value)
+        else:
+            warnings.warn(f"Unknown type of {key}, please"
+                          f" consider updating \'keywords.json\'"
+                          f" file with a PR.")
+    return key, value
+
+
+def print_setting(key, value):
+    if key not in keywords:
+        raise ValueError(f"Unknown keyword {key}.")
+    else:
+        keyword_type = keywords[key]
+        if keyword_type in ('number', 'int', 'string'):
+            line = f"{key} = {value}\n"
+        elif keyword_type == 'bool':
+            line = f"{key} = {1 if value else 0}\n"
+        elif keyword_type == 'array':
+            line = f"{key} = {str(value).strip('[]')}\n"
+        else:
+            warnings.warn(f"Unknown type of {key}, please"
+                          f" consider updating \'keywords.json\'"
+                          f" file with a PR.")
+            line = f"{key} = {value}\n"
+    return line
+
+
+class GEOtop(MutableMapping):
     """Represents a GEOtop simulation as a black box.
 
     Attributes:
@@ -43,9 +100,12 @@ class GEOtop:
             The path of the `geotop` executable
             (default is geotopy._geotop_exe)
     """
+
     # The constructor just checks the preconditions on files and
     # directories pointed by the arguments
     def __init__(self, inputs_dir, exe=None, run_args=None):
+        super().__init__()
+
         # inputs_dir must be a readable directory
         if not os.path.isdir(inputs_dir):
             raise FileNotFoundError(f"{inputs_dir} does not exist.")
@@ -60,6 +120,15 @@ class GEOtop:
             raise FileNotFoundError(f"{inputs_path} does not exist.")
         elif not os.access(inputs_path, os.R_OK):
             raise PermissionError(f"{inputs_path} is not readable.")
+        else:
+            self.settings = dict()
+            with open(inputs_path, 'r') as f:
+                while line := f.readline():
+                    if not _comment_re.match(line):
+                        key, value = read_setting(line)
+                        self.settings[key] = value
+                    else:
+                        warnings.warn(f"Wrong input: {line}, skipping.")
 
         # exe must be an executable file (but there are no checks
         # that is indeed a geotop executable)
@@ -74,13 +143,31 @@ class GEOtop:
         self.run_args = \
             run_args if run_args else {'check': True, 'capture_output': True}
 
+    def __getitem__(self, key):
+        return self.settings[key]
+
+    def __setitem__(self, key, value):
+        if key not in keywords:
+            raise ValueError(f"Unknown keyword {key}.")
+        else:
+            self.settings[key] = value
+
+    def __delitem__(self, key):
+        del self.settings[key]
+
+    def __len__(self):
+        return len(self.settings)
+
+    def __iter__(self):
+        return iter(self.settings)
+
     def preprocess(self, working_dir, *args, **kwargs):
         raise NotImplementedError
 
     def postprocess(self, working_dir):
         raise NotImplementedError
 
-    def eval(self, *args, working_dir=None, **kwargs):
+    def eval(self, working_dir, *args, **kwargs):
         # working_dir must be a writable directory
         working_dir = working_dir if working_dir else self.inputs_dir
         if not os.path.isdir(working_dir):
