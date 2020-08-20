@@ -125,10 +125,11 @@ class GEOtop(MutableMapping):
             with open(inputs_path, 'r') as f:
                 while line := f.readline():
                     if not _comment_re.match(line):
-                        key, value = read_setting(line)
-                        self.settings[key] = value
-                    else:
-                        warnings.warn(f"Wrong input: {line}, skipping.")
+                        try:
+                            key, value = read_setting(line)
+                            self.settings[key] = value
+                        except ValueError as err:
+                            warnings.warn(f"{err} Skipping.")
 
         # exe must be an executable file (but there are no checks
         # that is indeed a geotop executable)
