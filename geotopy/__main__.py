@@ -6,7 +6,7 @@ import subprocess
 import shutil
 
 parser = argparse.ArgumentParser(prog="GEOtoPy",
-                                 description="Simple GEOtop launcher.")
+                                 description="Paper-thin wrapper to work with GEOtop from Python.")
 parser.add_argument("inputs_dir",
                     help="Input directory, containing geotop.inpts "
                          "and other input files.")

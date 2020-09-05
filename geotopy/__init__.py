@@ -169,10 +169,12 @@ class GEOtop(MutableMapping):
         raise NotImplementedError
 
     def eval(self, working_dir, *args, **kwargs):
-        # working_dir must be a writable directory
-        working_dir = working_dir if working_dir else self.inputs_dir
+        # working_dir must be a writable directory different from inputs_dir
         if not os.path.isdir(working_dir):
             raise FileNotFoundError(f"{working_dir} does not exist.")
+        elif os.path.realpath(working_dir) == os.path.realpath(self.inputs_dir):
+            raise RuntimeError("Working directory must be "
+                               "different from the inputs one.")
         elif not os.access(working_dir, os.W_OK):
             raise PermissionError(f"{working_dir} is not writable.")
         else:
