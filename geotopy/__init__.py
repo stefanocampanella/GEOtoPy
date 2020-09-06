@@ -54,7 +54,7 @@ def read_setting(line):
         raise ValueError(f"Unknown keyword {key}.")
     else:
         keyword_type = keywords[key]
-        if keyword_type == 'number':
+        if keyword_type == 'float':
             value = float(value)
         elif keyword_type == 'array':
             value = [float(n) for n in value.split(',')]
@@ -76,7 +76,7 @@ def print_setting(key, value):
         raise ValueError(f"Unknown keyword {key}.")
     else:
         keyword_type = keywords[key]
-        if keyword_type in ('number', 'int', 'string'):
+        if keyword_type in ('float', 'int', 'string'):
             line = f"{key} = {value}\n"
         elif keyword_type == 'bool':
             line = f"{key} = {1 if value else 0}\n"
