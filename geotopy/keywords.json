@@ -463,7 +463,7 @@
     "PeriodSnow": "unknown",
     "PeriodSoil": "unknown",
     "PNetBasin": "unknown",
-    "PointAll": "scalar",
+    "PointAll": "bool",
     "PointAspect": "array",
     "PointCurvatureNortheastSouthwestDirection": "unknown",
     "PointCurvatureNorthSouthDirection": "unknown",
