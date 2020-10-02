@@ -112,10 +112,10 @@ class GEOtop(MutableMapping):
         elif not os.access(inputs_dir, os.R_OK):
             raise PermissionError(f"{inputs_dir} is not readable.")
         else:
-            self.inputs_dir = inputs_dir
+            self.inputs_dir = os.path.abspath(inputs_dir)
 
         # and must contain a readable 'geotop.inpts' file
-        inputs_path = os.path.join(inputs_dir, 'geotop.inpts')
+        inputs_path = os.path.join(self.inputs_dir, 'geotop.inpts')
         if not os.path.isfile(inputs_path):
             raise FileNotFoundError(f"{inputs_path} does not exist.")
         elif not os.access(inputs_path, os.R_OK):
@@ -139,7 +139,7 @@ class GEOtop(MutableMapping):
         elif not os.access(exe, os.R_OK):
             raise PermissionError(f"{exe} is not readable.")
         else:
-            self.exe = exe
+            self.exe = os.path.abspath(exe)
 
         self.run_args = \
             run_args if run_args else {'check': True, 'capture_output': True}
