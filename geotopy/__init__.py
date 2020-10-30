@@ -134,7 +134,9 @@ class GEOtop(MutableMapping):
         # exe must be an executable file (but there are no checks
         # that is indeed a geotop executable)
         exe = exe if exe else _geotop_exe
-        if not os.path.isfile(exe):
+        if not exe:
+            raise RuntimeError("A GEOtop executable must be provided")
+        elif not os.path.isfile(exe):
             raise FileNotFoundError(f"{exe} does not exist.")
         elif not os.access(exe, os.R_OK):
             raise PermissionError(f"{exe} is not readable.")
