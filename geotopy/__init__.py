@@ -16,81 +16,21 @@ executable for each simulation, as an optional argument.
     model = GEOtop("path/to/inputs")
     model.run()
 """
+from tempfile import TemporaryDirectory
+
+from datetime import datetime
+
 import os
 import re
 import json
-from collections.abc import MutableMapping
 import shutil
 import subprocess
 import warnings
 import importlib.resources as resources
-
-# Checks for default geotop executable, if not found prompts a warning
-if path := shutil.which('geotop'):
-    _geotop_exe = path
-elif path := os.getenv('GEOTOP_EXE'):
-    _geotop_exe = path
-else:
-    _geotop_exe = None
-    warnings.warn("Default GEOTop executable not found, check your installation",
-                  RuntimeWarning)
-
-# Load keywords type dictionary
-
-with resources.open_text(__name__, 'keywords.json') as keywords_file:
-    keywords = json.load(keywords_file)
-
-_comment_re = re.compile(r'\s*!.*\n|\s+')
-_setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)\n')
+from abc import ABC, abstractmethod
 
 
-def read_setting(line):
-    if match := _setting_re.match(line):
-        key, value = match.groups()
-    else:
-        raise ValueError(f"{line} is not a valid setting.")
-
-    if key not in keywords:
-        raise ValueError(f"Unknown keyword {key}.")
-    else:
-        keyword_type = keywords[key]
-        if keyword_type == 'float':
-            value = float(value)
-        elif keyword_type == 'array':
-            value = [float(n) for n in value.split(',')]
-        elif keyword_type == 'bool':
-            value = True if int(value) == 1 else False
-        elif keyword_type == 'int':
-            value = int(value)
-        elif keyword_type == 'string':
-            value = str(value)
-        else:
-            warnings.warn(f"Unknown type of {key}, please"
-                          f" consider updating \'keywords.json\'"
-                          f" file with a PR.")
-    return key, value
-
-
-def print_setting(key, value):
-    if key not in keywords:
-        raise ValueError(f"Unknown keyword {key}.")
-    else:
-        keyword_type = keywords[key]
-        if keyword_type in ('float', 'int', 'string'):
-            line = f"{key} = {value}\n"
-        elif keyword_type == 'bool':
-            line = f"{key} = {1 if value else 0}\n"
-        elif keyword_type == 'array':
-            line = f"{key} = {str(value).strip('[]')}\n"
-        else:
-            warnings.warn(f"Unknown type of {key}, please"
-                          f" consider updating \'keywords.json\'"
-                          f" file with a PR.")
-            line = f"{key} = {value}\n"
-    return line
-
-
-class GEOtop(MutableMapping):
+class GEOtop(ABC):
     """Represents a GEOtop simulation as a black box.
 
     Attributes:
@@ -100,6 +40,74 @@ class GEOtop(MutableMapping):
             The path of the `geotop` executable
             (default is geotopy._geotop_exe)
     """
+
+    # Checks for default geotop executable, if not found prompts a warning
+    if path := shutil.which('geotop'):
+        _geotop_exe = path
+    elif path := os.getenv('GEOTOP_EXE'):
+        _geotop_exe = path
+    else:
+        _geotop_exe = None
+        warnings.warn("Default GEOTop executable not found, check your installation",
+                      RuntimeWarning)
+
+    # Load keywords type dictionary
+
+    with resources.open_text(__name__, 'keywords.json') as keywords_file:
+        keywords = json.load(keywords_file)
+
+    _comment_re = re.compile(r'\s*!.*\n|\s+')
+    _setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)\n')
+
+    @staticmethod
+    def read_setting(line):
+        if match := GEOtop._setting_re.match(line):
+            key, value = match.groups()
+        else:
+            raise ValueError(f"{line} is not a valid setting.")
+
+        if key not in GEOtop.keywords:
+            raise ValueError(f"Unknown keyword {key}.")
+        else:
+            keyword_type = GEOtop.keywords[key]
+            if keyword_type == 'float':
+                value = float(value)
+            elif keyword_type == 'array':
+                value = [float(n) for n in value.split(',')]
+            elif keyword_type == 'bool':
+                value = True if int(value) == 1 else False
+            elif keyword_type == 'int':
+                value = int(value)
+            elif keyword_type == 'string':
+                value = str(value)
+            else:
+                warnings.warn(f"Unknown type of {key}, please"
+                              f" consider updating \'keywords.json\'"
+                              f" file with a PR.")
+        return key, value
+
+    @staticmethod
+    def print_setting(key, value):
+        if key not in GEOtop.keywords:
+            raise ValueError(f"Unknown keyword {key}.")
+        else:
+            keyword_type = GEOtop.keywords[key]
+            if keyword_type in ('float', 'int', 'string'):
+                line = f"{key} = {value}\n"
+            elif keyword_type == 'bool':
+                line = f"{key} = {1 if value else 0}\n"
+            elif keyword_type == 'array':
+                line = f"{key} = {str(value).strip('[]')}\n"
+            else:
+                warnings.warn(f"Unknown type of {key}, please"
+                              f" consider updating \'keywords.json\'"
+                              f" file with a PR.")
+                line = f"{key} = {value}\n"
+        return line
+
+    @staticmethod
+    def date_parser(x):
+        return datetime.strptime(x, '%d/%m/%Y %H:%M')
 
     # The constructor just checks the preconditions on files and
     # directories pointed by the arguments
@@ -124,16 +132,16 @@ class GEOtop(MutableMapping):
             self.settings = dict()
             with open(inputs_path, 'r') as f:
                 while line := f.readline():
-                    if not _comment_re.match(line):
+                    if not GEOtop._comment_re.match(line):
                         try:
-                            key, value = read_setting(line)
+                            key, value = GEOtop.read_setting(line)
                             self.settings[key] = value
                         except ValueError as err:
                             warnings.warn(f"{err} Skipping.")
 
         # exe must be an executable file (but there are no checks
         # that is indeed a geotop executable)
-        exe = exe if exe else _geotop_exe
+        exe = exe if exe else GEOtop._geotop_exe
         if not exe:
             raise RuntimeError("A GEOtop executable must be provided")
         elif not os.path.isfile(exe):
@@ -143,31 +151,18 @@ class GEOtop(MutableMapping):
         else:
             self.exe = os.path.abspath(exe)
 
-        self.run_args = \
-            run_args if run_args else {'check': True, 'capture_output': True}
+        self.run_args = {'check': True, 'capture_output': True}
+        if run_args:
+            self.run_args.update(run_args)
 
-    def __getitem__(self, key):
-        return self.settings[key]
-
-    def __setitem__(self, key, value):
-        if key not in keywords:
-            raise ValueError(f"Unknown keyword {key}.")
-        else:
-            self.settings[key] = value
-
-    def __delitem__(self, key):
-        del self.settings[key]
-
-    def __len__(self):
-        return len(self.settings)
-
-    def __iter__(self):
-        return iter(self.settings)
-
+    @abstractmethod
     def preprocess(self, working_dir, *args, **kwargs):
+
         raise NotImplementedError
 
+    @abstractmethod
     def postprocess(self, working_dir):
+
         raise NotImplementedError
 
     def eval(self, working_dir, *args, **kwargs):
@@ -193,3 +188,9 @@ class GEOtop(MutableMapping):
         output = self.postprocess(working_dir)
 
         return output
+
+    def __call__(self, *args, **kwargs):
+
+        with TemporaryDirectory() as tmpdir:
+            sim = self.eval(tmpdir, *args, **kwargs)
+        return sim

@@ -17,7 +17,7 @@ parser.add_argument("outputs_dir",
 cli_args = parser.parse_args()
 
 
-class GEOtopSimpleRun(gtp.GEOtop):
+class Model(gtp.GEOtop):
 
     def preprocess(self, working_dir, *args, **kwargs):
         if shutil.which('tree'):
@@ -30,8 +30,8 @@ class GEOtopSimpleRun(gtp.GEOtop):
         os.remove(geotop_inpts)
         with open(geotop_inpts, 'w') as settings:
             settings.write("! GEOtop input file written by GEOtoPy\n")
-            for key, value in self.items():
-                settings.write(gtp.print_setting(key, value))
+            for key, value in self.settings.items():
+                settings.write(self.print_setting(key, value))
 
         print("==== Running GEOtop... ====\n")
 
@@ -46,7 +46,7 @@ class GEOtopSimpleRun(gtp.GEOtop):
 
 tic = time.perf_counter()
 try:
-    model = GEOtopSimpleRun(cli_args.inputs_dir)
+    model = Model(cli_args.inputs_dir)
     model.eval(cli_args.outputs_dir)
 except Exception:
     raise
