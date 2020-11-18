@@ -2,6 +2,9 @@ import numpy as np
 
 
 class RMSE:
+    """
+    Root mean square error, with optional normalization
+    """
 
     def __init__(self, observations, norm=None):
 
@@ -28,6 +31,9 @@ class RMSE:
 
 
 class NSE:
+    """
+    Nash-Sutcliffe Efficiency
+    """
 
     def __init__(self, observations):
         self.observations = observations
@@ -35,10 +41,13 @@ class NSE:
 
     def __call__(self, simulation):
         diff = self.observations - simulation
-        return 1 - (diff * diff).mean() / self.square_mean
+        return 1 - np.sqrt((diff * diff).mean() / self.square_mean)
 
 
 class KGE:
+    """
+    Kling-Gupta Efficiency
+    """
 
     def __init__(self, observations):
         self.observations = observations

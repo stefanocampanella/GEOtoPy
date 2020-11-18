@@ -1,27 +1,39 @@
+from datetime import datetime
 import pandas as pd
-from SALib.sample import latin
-from SALib.analyze import delta as delta_mim
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import seaborn as sns
 import hiplot as hip
 
 
-def sa_sample(variables, n):
-    return latin.sample(variables.sa_problem, n)
+class DataFrameLogger:
+
+    def __init__(self, variables):
+
+        columns = variables.names
+        data = []
+
+    def __call__(self, optimizer, candidate, loss):
+
+        point = optimizer.loss.massage(*candidate.args)
+        point['loss'] = loss
+        self.data.append(point)
+
+    @property
+    def dataframe(self):
+
+        return pd.DataFrame(self.data, columns=self.columns)
+
+    @property
+    def experiment(self):
+
+        return hip.Experiment.from_dataframe(self.dataframe)
 
 
-def sa_analyze(variables, samples):
-    columns = variables.names
-    samples = samples.dropna(subset=['loss'])
-    xs = samples[columns].to_numpy()
-    ys = samples['loss'].to_numpy()
+def date_parser(x):
 
-    return delta_mim.analyze(variables.sa_problem, xs, ys)
+    return datetime.strptime(x, '%d/%m/%Y %H:%M')
 
-
-def parallel_coordinates_plot(samples):
-    return hip.Experiment.from_dataframe(samples)
 
 
 def comparison_plot(observations, simulation, scales=None, desc=None, unit=None, rel=False, figsize=(16, 9),

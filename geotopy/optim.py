@@ -77,13 +77,6 @@ class Variables(ABC):
     def types(self):
         raise NotImplementedError
 
-    @property
-    def sa_problem(self):
-
-        return {'num_vars': self.num_vars,
-                'names': self.names,
-                'bounds': self.bounds}
-
 
 class Loss(ABC):
 
