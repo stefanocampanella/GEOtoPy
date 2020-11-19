@@ -41,7 +41,7 @@ class NSE:
 
     def __call__(self, simulation):
         diff = self.observations - simulation
-        return 1 - np.sqrt((diff * diff).mean() / self.square_mean)
+        return np.sqrt((diff * diff).mean() / self.square_mean) - 1
 
 
 class KGE:
@@ -59,4 +59,4 @@ class KGE:
         y = simulation.mean() / self.mean - 1
         z = simulation.std() / self.std - 1
 
-        return 1 - np.sqrt(x * x + y * y + z * z)
+        return np.sqrt(x * x + y * y + z * z) - 1
