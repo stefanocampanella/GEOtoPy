@@ -4,37 +4,52 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import seaborn as sns
 import hiplot as hip
+from tqdm.auto import tqdm
 
 
-class DataFrameLogger:
+class ParametersLogger:
 
-    def __init__(self, variables):
+    def __init__(self, massage):
 
-        columns = variables.names
-        data = []
+        self.massage = massage
+        self.data = []
 
     def __call__(self, optimizer, candidate, loss):
 
-        point = optimizer.loss.massage(*candidate.args)
-        point['loss'] = loss
-        self.data.append(point)
-
-    @property
-    def dataframe(self):
-
-        return pd.DataFrame(self.data, columns=self.columns)
+        data = {"num-tell": optimizer.num_tell,
+                "generation": candidate.generation,
+                "loss": loss}
+        args, kwargs = self.massage(*candidate.args, **candidate.kwargs)
+        for position, value in enumerate(args):
+            kwargs[repr(position)] = value
+        data.update(kwargs)
+        self.data.append(data)
 
     @property
     def experiment(self):
 
-        return hip.Experiment.from_dataframe(self.dataframe)
+        return hip.Experiment.from_iterable(self.data)
+
+    def parallel_coordinate_plot(self):
+
+        self.experiment.display()
 
 
-def date_parser(x):
+class ProgressBar(tqdm):
 
-    return datetime.strptime(x, '%d/%m/%Y %H:%M')
+    def __init__(self, *args, **kwargs):
 
+        super().__init__(*args, **kwargs)
 
+        self.loss = None
+
+    def __call__(self, optimizer, candidate, loss, **kwargs):
+
+        super().update()
+
+        if (self.loss is None) or (loss < self.loss):
+            self.loss = loss
+            self.set_description(desc=f"(Current loss: {self.loss:.4f})")
 
 def comparison_plot(observations, simulation, scales=None, desc=None, unit=None, rel=False, figsize=(16, 9),
                     dpi=100):
@@ -85,3 +100,10 @@ def comparison_plot(observations, simulation, scales=None, desc=None, unit=None,
         hist_plot.set_ylabel('')
 
     return fig
+
+
+def date_parser(x):
+
+    return datetime.strptime(x, '%d/%m/%Y %H:%M')
+
+
