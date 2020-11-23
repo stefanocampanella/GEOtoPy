@@ -10,24 +10,19 @@ class RMSE:
 
         self.observations = observations
 
-        if norm == 'mean':
-            self.norm = observations.mean()
-        elif norm == 'range':
+        if norm == 'range':
             self.norm = observations.max() - observations.min()
         elif norm == 'square':
             self.norm = (observations * observations).mean()
         else:
-            self.norm = norm
+            self.norm = 1.0
 
     def __call__(self, simulation):
 
         diff = self.observations - simulation
         rmse = np.sqrt((diff * diff).mean())
 
-        if self.norm:
-            return rmse / self.norm
-        else:
-            return rmse
+        return rmse / self.norm
 
 
 class NSE:
@@ -36,12 +31,14 @@ class NSE:
     """
 
     def __init__(self, observations):
+
         self.observations = observations
         self.square_mean = (observations * observations).mean()
 
     def __call__(self, simulation):
+
         diff = self.observations - simulation
-        return np.sqrt((diff * diff).mean() / self.square_mean) - 1
+        return np.sqrt((diff * diff).mean() / self.square_mean)
 
 
 class KGE:
@@ -50,13 +47,15 @@ class KGE:
     """
 
     def __init__(self, observations):
+
         self.observations = observations
         self.mean = observations.mean()
         self.std = observations.std()
 
     def __call__(self, simulation):
-        x = self.observations.corr(simulation) - 1
-        y = simulation.mean() / self.mean - 1
-        z = simulation.std() / self.std - 1
 
-        return np.sqrt(x * x + y * y + z * z) - 1
+        r = self.observations.corr(simulation) - 1
+        m = simulation.mean() / self.mean - 1
+        v = simulation.std() / self.std - 1
+
+        return np.sqrt(r * r + m * m + v * v)

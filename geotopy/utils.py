@@ -51,6 +51,7 @@ class ProgressBar(tqdm):
             self.loss = loss
             self.set_description(desc=f"(Current loss: {self.loss:.4f})")
 
+
 def comparison_plot(observations, simulation, scales=None, desc=None, unit=None, rel=False, figsize=(16, 9),
                     dpi=100):
     if not scales:
