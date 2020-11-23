@@ -108,10 +108,9 @@ class Loss(ABC):
 class Calibration(ABC):
 
     @abstractmethod
-    def __init__(self, loss, settings):
+    def __init__(self, loss, *args, **kwargs):
 
         self.loss = loss
-        self.settings = settings
 
     @property
     @abstractmethod
