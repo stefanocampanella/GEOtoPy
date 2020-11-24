@@ -48,7 +48,11 @@ class ProgressBar(tqdm):
 
         super().update()
 
-        if self.loss is None or (np.isfinite(loss) and loss < self.loss):
+        from_none = self.loss is None
+        from_nan = np.isnan(self.loss) and not np.isnan(loss)
+        from_greater = self.loss > loss
+
+        if from_none or from_nan or from_greater:
             self.loss = loss
             self.set_description(desc=f"(Current loss: {self.loss:.4f})")
 
