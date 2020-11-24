@@ -49,8 +49,8 @@ class ProgressBar(tqdm):
         super().update()
 
         from_none = self.loss is None
-        from_nan = self.loss is not None and isnan(self.loss) and not isnan(loss)
-        from_greater = self.loss > loss
+        from_nan = not from_none and isnan(self.loss) and not isnan(loss)
+        from_greater = not from_none and not from_nan and self.loss > loss
 
         if from_none or from_nan or from_greater:
             self.loss = loss
