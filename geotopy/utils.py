@@ -1,6 +1,6 @@
 from datetime import datetime
 import pandas as pd
-import numpy as np
+from math import isnan
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import seaborn as sns
@@ -49,7 +49,7 @@ class ProgressBar(tqdm):
         super().update()
 
         from_none = self.loss is None
-        from_nan = np.isnan(self.loss) and not np.isnan(loss)
+        from_nan = self.loss is not None and isnan(self.loss) and not isnan(loss)
         from_greater = self.loss > loss
 
         if from_none or from_nan or from_greater:
@@ -112,5 +112,3 @@ def comparison_plot(observations, simulation, scales=None, desc=None, unit=None,
 def date_parser(x):
 
     return datetime.strptime(x, '%d/%m/%Y %H:%M')
-
-
