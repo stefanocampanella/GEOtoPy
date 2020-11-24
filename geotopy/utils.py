@@ -1,5 +1,6 @@
 from datetime import datetime
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import seaborn as sns
@@ -47,13 +48,14 @@ class ProgressBar(tqdm):
 
         super().update()
 
-        if (self.loss is None) or (loss < self.loss):
+        if self.loss is None or (np.isfinite(loss) and loss < self.loss):
             self.loss = loss
             self.set_description(desc=f"(Current loss: {self.loss:.4f})")
 
 
 def comparison_plot(observations, simulation, scales=None, desc=None, unit=None, rel=False, figsize=(16, 9),
                     dpi=100):
+
     if not scales:
         scales = {'Daily': 'D', 'Weekly': 'W', 'Monthly': 'M'}
 
