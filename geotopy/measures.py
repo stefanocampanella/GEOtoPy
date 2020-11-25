@@ -31,12 +31,10 @@ class NSE:
     """
 
     def __init__(self, observations):
-
         self.observations = observations
         self.square_mean = (observations * observations).mean()
 
     def __call__(self, simulation):
-
         diff = self.observations - simulation
         return np.sqrt((diff * diff).mean() / self.square_mean)
 
@@ -47,13 +45,11 @@ class KGE:
     """
 
     def __init__(self, observations):
-
         self.observations = observations
         self.mean = observations.mean()
         self.std = observations.std()
 
     def __call__(self, simulation):
-
         r = self.observations.corr(simulation) - 1
         m = simulation.mean() / self.mean - 1
         v = simulation.std() / self.std - 1

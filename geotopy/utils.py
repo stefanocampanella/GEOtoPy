@@ -1,22 +1,21 @@
 from datetime import datetime
-import pandas as pd
 from math import isnan
+
+import hiplot as hip
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import pandas as pd
 import seaborn as sns
-import hiplot as hip
 from tqdm.auto import tqdm
 
 
 class ParametersLogger:
 
     def __init__(self, massage):
-
         self.massage = massage
         self.data = []
 
     def __call__(self, optimizer, candidate, loss):
-
         data = {"num-tell": optimizer.num_tell,
                 "generation": candidate.generation,
                 "loss": loss}
@@ -28,24 +27,20 @@ class ParametersLogger:
 
     @property
     def experiment(self):
-
         return hip.Experiment.from_iterable(self.data)
 
     def parallel_coordinate_plot(self):
-
         self.experiment.display()
 
 
 class ProgressBar(tqdm):
 
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
 
         self.loss = None
 
     def __call__(self, optimizer, candidate, loss, **kwargs):
-
         super().update()
 
         from_none = self.loss is None
@@ -59,7 +54,6 @@ class ProgressBar(tqdm):
 
 def comparison_plot(observations, simulation, scales=None, desc=None, unit=None, rel=False, figsize=(16, 9),
                     dpi=100):
-
     if not scales:
         scales = {'Daily': 'D', 'Weekly': 'W', 'Monthly': 'M'}
 
@@ -110,5 +104,4 @@ def comparison_plot(observations, simulation, scales=None, desc=None, unit=None,
 
 
 def date_parser(x):
-
     return datetime.strptime(x, '%d/%m/%Y %H:%M')

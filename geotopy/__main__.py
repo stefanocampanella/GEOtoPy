@@ -1,9 +1,10 @@
 import argparse
 import os
-import time
-import geotopy as gtp
-import subprocess
 import shutil
+import subprocess
+import time
+
+import geotopy as gtp
 
 parser = argparse.ArgumentParser(prog="GEOtoPy",
                                  description="Paper-thin wrapper to work with GEOtop from Python.")

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from subprocess import CalledProcessError, TimeoutExpired
 from os.path import join as joinpath
+from subprocess import CalledProcessError, TimeoutExpired
 
 import numpy as np
 
@@ -109,22 +109,18 @@ class Calibration(ABC):
 
     @abstractmethod
     def __init__(self, loss, *args, **kwargs):
-
         self.loss = loss
 
     @property
     @abstractmethod
     def parametrization(self):
-
         raise NotImplementedError
 
     @property
     @abstractmethod
     def optimizer(self):
-
         raise NotImplementedError
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
-
         raise NotImplementedError
