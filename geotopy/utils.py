@@ -78,6 +78,7 @@ def comparison_plot(observations, simulation, scales=None, desc=None, unit=None,
 
         data = pd.DataFrame({'Observations': obs_resampled, 'Simulation': sim_resampled})
         sns.lineplot(data=data, ax=comp_plot)
+        plt.setp(comp_plot.get_xticklabels(), rotation=20)
         comp_plot.set_title(Tstr)
         comp_plot.set_xlabel('')
         if unit:
