@@ -51,7 +51,7 @@ class GEOtop(ABC):
         keywords = json.load(keywords_file)
 
     _comment_re = re.compile(r'\s*!.*\n|\s+')
-    _setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)(\n|\Z)')
+    _setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)(?:\n|\Z)')
 
     # The constructor just check all preconditions and parse `geotop.inpts`
     def __init__(self, inputs_dir, exe=None, run_args=None):
