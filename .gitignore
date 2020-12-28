@@ -3,3 +3,4 @@ bin
 dist
 geotopy.egg-info
 .idea
+__pycache__
