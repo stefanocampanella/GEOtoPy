@@ -13,6 +13,7 @@ measures and utils contains utilities for the calibration of GEOtop.
 import importlib.resources as resources
 import json
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -37,10 +38,10 @@ class GEOtop(ABC):
     """
 
     # Checks for default geotop executable, if not found prompts a warning
-    if path := shutil.which('geotop'):
-        _geotop_exe = path
-    elif path := os.getenv('GEOTOP_EXE'):
-        _geotop_exe = path
+    if geotop_path := shutil.which('geotop'):
+        _geotop_exe = Path(geotop_path)
+    elif geotop_path := os.getenv('GEOTOP_EXE'):
+        _geotop_exe = Path(geotop_path)
     else:
         _geotop_exe = None
         warnings.warn("Default GEOTop executable not found, check your installation",
@@ -58,16 +59,17 @@ class GEOtop(ABC):
         super().__init__()
 
         # inputs_dir must be a readable directory
-        if not os.path.isdir(inputs_dir):
+        inputs_dir = Path(inputs_dir)
+        if not inputs_dir.is_dir():
             raise FileNotFoundError(f"{inputs_dir} does not exist.")
         elif not os.access(inputs_dir, os.R_OK):
             raise PermissionError(f"{inputs_dir} is not readable.")
         else:
-            self.inputs_dir = os.path.abspath(inputs_dir)
+            self.inputs_dir = inputs_dir.resolve()
 
         # and must contain a readable 'geotop.inpts' file
-        inputs_path = os.path.join(self.inputs_dir, 'geotop.inpts')
-        if not os.path.isfile(inputs_path):
+        inputs_path = self.inputs_dir / 'geotop.inpts'
+        if not inputs_path.is_file():
             raise FileNotFoundError(f"{inputs_path} does not exist.")
         elif not os.access(inputs_path, os.R_OK):
             raise PermissionError(f"{inputs_path} is not readable.")
@@ -83,15 +85,15 @@ class GEOtop(ABC):
                             warnings.warn(f"{err} Skipping.")
 
         # exe must be an executable file
-        exe = exe if exe else GEOtop._geotop_exe
+        exe = Path(exe) if exe else GEOtop._geotop_exe
         if not exe:
             raise RuntimeError("A GEOtop executable must be provided")
-        elif not os.path.isfile(exe):
+        elif not exe.is_file():
             raise FileNotFoundError(f"{exe} does not exist.")
         elif not os.access(exe, os.X_OK):
             raise PermissionError(f"{exe} is not executable.")
         else:
-            self.exe = os.path.abspath(exe)
+            self.exe = exe.resolve()
 
         self.run_args = {'check': True, 'capture_output': True}
         if run_args:
@@ -109,9 +111,10 @@ class GEOtop(ABC):
 
     def eval(self, working_dir, *args, **kwargs):
         # working_dir must be a writable directory different from inputs_dir
-        if not os.path.isdir(working_dir):
+        working_dir = Path(working_dir)
+        if not working_dir.is_dir():
             raise FileNotFoundError(f"{working_dir} does not exist.")
-        elif os.path.realpath(working_dir) == os.path.realpath(self.inputs_dir):
+        elif working_dir.samefile(self.inputs_dir):
             raise RuntimeError("Working directory must be "
                                "different from the inputs one.")
         elif not os.access(working_dir, os.W_OK):
