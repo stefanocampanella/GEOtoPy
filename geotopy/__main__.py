@@ -3,8 +3,7 @@ import os
 import shutil
 import subprocess
 import time
-
-import geotopy as gtp
+from . import GEOtop
 
 parser = argparse.ArgumentParser(prog="GEOtoPy",
                                  description="Paper-thin wrapper to work with GEOtop from Python.")
@@ -18,7 +17,7 @@ parser.add_argument("outputs_dir",
 cli_args = parser.parse_args()
 
 
-class Model(gtp.GEOtop):
+class Model(GEOtop):
 
     def preprocess(self, working_dir, *args, **kwargs):
         if shutil.which('tree'):
@@ -51,6 +50,5 @@ try:
     model.eval(cli_args.outputs_dir)
 except Exception:
     raise
-
 toc = time.perf_counter()
 print(f"Wall time: {toc - tic:.2f} seconds.")

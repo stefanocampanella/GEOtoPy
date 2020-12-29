@@ -12,14 +12,14 @@ executable for each simulation, as an optional argument.
 import importlib.resources as resources
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import warnings
 from abc import ABC, abstractmethod
-from tempfile import TemporaryDirectory
 from datetime import datetime
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
 class GEOtop(ABC):
@@ -54,7 +54,7 @@ class GEOtop(ABC):
         keywords = json.load(keywords_file)
 
     _comment_re = re.compile(r'\s*!.*\n|\s+')
-    _setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)(?:\n|\Z)')
+    _setting_re = re.compile(r'\s*(?P<keyword>[A-Z]\w*)\s*=\s*(?P<value>.*)(?:\n|\Z)')
 
     # The constructor just check all preconditions and parse `geotop.inpts`
     def __init__(self, inputs_dir, exe=None, **kwargs):
