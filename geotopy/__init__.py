@@ -20,6 +20,7 @@ import subprocess
 import warnings
 from abc import ABC, abstractmethod
 from tempfile import TemporaryDirectory
+from datetime import datetime
 
 
 class GEOtop(ABC):
@@ -31,7 +32,7 @@ class GEOtop(ABC):
             a readable `geotop.inpts` file
         exe : string or path-like, default = GEOtop._geotop_exe
             The path of the `geotop` executable
-        run_args: dict, default = {'check': True, 'capture_output': True}
+        kwargs: dict, default = {'check': True, 'capture_output': True}
             Optional arguments for subprocess.run
         settings: dict
             Simulation settings, parsed at instantiation of a GEOtop object
@@ -39,12 +40,12 @@ class GEOtop(ABC):
 
     # Checks for default geotop executable, if not found prompts a warning
     if geotop_path := shutil.which('geotop'):
-        _geotop_exe = Path(geotop_path)
+        _geotop_exe = Path(geotop_path).resolve()
     elif geotop_path := os.getenv('GEOTOP_EXE'):
-        _geotop_exe = Path(geotop_path)
+        _geotop_exe = Path(geotop_path).resolve()
     else:
         _geotop_exe = None
-        warnings.warn("Default GEOTop executable not found, check your installation",
+        warnings.warn("Default GEOTop executable not found, check your installation.",
                       RuntimeWarning)
 
     # Load keywords type dictionary
@@ -55,7 +56,7 @@ class GEOtop(ABC):
     _setting_re = re.compile(r'\s*([A-Z]\w*)\s*=\s*(.*)(?:\n|\Z)')
 
     # The constructor just check all preconditions and parse `geotop.inpts`
-    def __init__(self, inputs_dir, exe=None, run_args=None):
+    def __init__(self, inputs_dir, exe=None, **kwargs):
         super().__init__()
 
         # inputs_dir must be a readable directory
@@ -74,6 +75,7 @@ class GEOtop(ABC):
         elif not os.access(inputs_path, os.R_OK):
             raise PermissionError(f"{inputs_path} is not readable.")
         else:
+            self.geotop_inpts_path = inputs_path
             self.settings = dict()
             with open(inputs_path, 'r') as f:
                 while line := f.readline():
@@ -96,8 +98,8 @@ class GEOtop(ABC):
             self.exe = exe.resolve()
 
         self.run_args = {'check': True, 'capture_output': True}
-        if run_args:
-            self.run_args.update(run_args)
+        if kwargs:
+            self.run_args.update(kwargs)
 
     @abstractmethod
     def preprocess(self, working_dir, *args, **kwargs):
@@ -112,8 +114,10 @@ class GEOtop(ABC):
     def eval(self, working_dir, *args, **kwargs):
         # working_dir must be a writable directory different from inputs_dir
         working_dir = Path(working_dir)
-        if not working_dir.is_dir():
+        if not working_dir.exists():
             raise FileNotFoundError(f"{working_dir} does not exist.")
+        elif not working_dir.is_dir():
+            raise RuntimeError(f"{working_dir} is not a directory.")
         elif working_dir.samefile(self.inputs_dir):
             raise RuntimeError("Working directory must be "
                                "different from the inputs one.")
@@ -134,11 +138,50 @@ class GEOtop(ABC):
 
         return output
 
+    # Calling the GEOtop object runs the model in a temporary directory
     def __call__(self, *args, **kwargs):
 
         with TemporaryDirectory() as tmpdir:
             sim = self.eval(tmpdir, *args, **kwargs)
         return sim
+
+    def overwrite_settings(self, working_dir, new_settings):
+
+        settings = self.settings.copy()
+        settings.update(new_settings)
+
+        destination_path = working_dir / 'geotop.inpts'
+        with open(self.geotop_inpts_path, 'r') as src, open(destination_path, 'w') as destination:
+            destination.write(f"! GEOtop input file written by GEOtoPy {datetime.now().strftime('%x %X')}\n")
+            while line := src.readline():
+                if GEOtop._comment_re.match(line):
+                    destination.write(line)
+                else:
+                    try:
+                        key, value = GEOtop.read_setting(line)
+
+                        if key in settings and value != settings[key]:
+                            destination.write(f"! GEOtoPy: {key} overwritten, was {value}\n")
+                            line = GEOtop.print_setting(key, settings[key])
+                        else:
+                            line = GEOtop.print_setting(key, value)
+
+                        destination.write(line)
+                        del settings[key]
+
+                    except ValueError as err:
+                        destination.write(f"! GEOtoPy: {err}\n")
+                        destination.write(line)
+
+            if settings:
+                destination.write("\n! Settings added by GEOtoPy\n")
+                for key, value in settings.items():
+                    try:
+                        line = GEOtop.print_setting(key, value)
+                        destination.write(line)
+                    except ValueError as err:
+                        destination.write(f"! GEOtoPy: {err}\n")
+                        destination.write(f"{key} = {value}\n")
 
     @staticmethod
     def read_setting(line):
@@ -163,8 +206,8 @@ class GEOtop(ABC):
                 value = str(value)
             else:
                 warnings.warn(f"Unknown type of {key}, please"
-                              f" consider updating \'keywords.json\'"
-                              f" file with a PR.")
+                              f" consider updating \'keywords.json\' file"
+                              f" in the GEOtoPy repository with a PR.")
         return key, value
 
     @staticmethod
@@ -181,7 +224,7 @@ class GEOtop(ABC):
                 line = f"{key} = {str(value).strip('[]')}\n"
             else:
                 warnings.warn(f"Unknown type of {key}, please"
-                              f" consider updating \'keywords.json\'"
-                              f" file with a PR.")
+                              f" consider updating \'keywords.json\' file"
+                              f" in the GEOtoPy repository with a PR.")
                 line = f"{key} = {value}\n"
         return line
