@@ -1,14 +1,13 @@
 """GEOtoPy: a dead simple, paper-thin GEOtop wrapper.
 
-GEOtoPy contains the GEOtop class, which is used to launch a simulation
+GEOtoPy contains just the GEOtop class, which is used to launch a simulation
 and can be subclassed to provide more specific/advanced feature. GEOtop should
 be already installed on your system as GEOtoPy does not provide its own
 binaries. If the executable can't be located in any of
 the directories in your PATH, GEOtoPy will look for the GEOTOP_EXE environment
 variable. You can check your installation by running the package (see
 `python -m geotopy --help`). However, you can specify the path of the
-executable for each simulation, as an optional argument. The submodules optim,
-measures and utils contains utilities for the calibration of GEOtop.
+executable for each simulation, as an optional argument.
 """
 import importlib.resources as resources
 import json
@@ -27,12 +26,14 @@ class GEOtop(ABC):
     """Represents a GEOtop simulation as a black box.
 
     Attributes:
-        inputs_dir : string or path-like
+        inputs_dir : pathlib object
             The path of the inputs dir, must be a readable directory containing
             a readable `geotop.inpts` file
-        exe : string or path-like, default = GEOtop._geotop_exe
+        geotop_inpts_path : pathlib object
+            The path of the `geotop.inpts` file
+        exe : pathlib object, default = GEOtop._geotop_exe
             The path of the `geotop` executable
-        kwargs: dict, default = {'check': True, 'capture_output': True}
+        run_args: dict, default = {'check': True, 'capture_output': True}
             Optional arguments for subprocess.run
         settings: dict
             Simulation settings, parsed at instantiation of a GEOtop object
