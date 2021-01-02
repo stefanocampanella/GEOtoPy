@@ -124,9 +124,6 @@ class GEOtop(ABC):
                                "different from the inputs one.")
         elif not os.access(working_dir, os.W_OK):
             raise PermissionError(f"{working_dir} is not writable.")
-        else:
-            # Copies the content of inputs_dir into working_dir
-            shutil.copytree(self.inputs_dir, working_dir, dirs_exist_ok=True)
 
         # Pre-process step prepares, takes the inputs and prepare input files
         self.preprocess(working_dir, *args, **kwargs)
@@ -146,7 +143,11 @@ class GEOtop(ABC):
             sim = self.eval(tmpdir, *args, **kwargs)
         return sim
 
-    def overwrite_settings(self, working_dir, new_settings):
+    def clone_inputs_to(self, working_dir):
+        # Copies the content of inputs_dir into working_dir
+        shutil.copytree(self.inputs_dir, working_dir, dirs_exist_ok=True)
+
+    def patch_settings_with(self, working_dir, new_settings):
 
         settings = self.settings.copy()
         settings.update(new_settings)
