@@ -6,15 +6,15 @@ from . import GEOtop
 
 parser = argparse.ArgumentParser(prog="GEOtoPy",
                                  description="Paper-thin wrapper to work with GEOtop from Python.")
-parser.add_argument("inputs_dir",
+parser.add_argument("inputs_path",
                     help="Input directory, containing geotop.inpts "
                          "and other input files.")
-parser.add_argument("outputs_dir",
+parser.add_argument("working_dir",
                     nargs='?',
                     default=None,
                     help="Working directory, where the inputs will be copied "
                          "and GEOtop will run. Must be different from "
-                         "inputs_dir.")
+                         "inputs_path.")
 cli_args = parser.parse_args()
 
 
@@ -23,12 +23,9 @@ class Model(GEOtop):
     def preprocess(self, working_dir, *args, **kwargs):
         if shutil.which('tree'):
             print("==== Input files: ====")
-            subprocess.run(['tree', '-D', self.inputs_dir])
+            subprocess.run(['tree', '-D', self.inputs_path])
             print()
         self.clone_inputs_to(working_dir)
-
-        print("==== Overriding geotop.inpts ====\n")
-        self.patch_settings_with(working_dir, kwargs)
 
         print("==== Running GEOtop... ====\n")
 
@@ -43,9 +40,9 @@ class Model(GEOtop):
 
 tic = time.perf_counter()
 try:
-    model = Model(cli_args.inputs_dir)
-    if working_dir := cli_args.outputs_dir:
-        model.eval(working_dir)
+    model = Model(cli_args.inputs_path)
+    if working_dir := cli_args.working_dir:
+        model.run_in(working_dir)
     else:
         model()
 except Exception:
