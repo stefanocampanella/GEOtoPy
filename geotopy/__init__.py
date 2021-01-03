@@ -221,38 +221,41 @@ class GEOtop(ABC):
         :param settings:
         :return:
         """
-
+        settings = settings.copy()
         destination_path = working_dir / 'geotop.inpts'
         with open(destination_path, 'w') as destination:
             destination.write("! GEOtop input file written by GEOtoPy "
                               f"{datetime.now().strftime('%x %X')}\n")
-            for line in self.geotop_inpts:
-                if GEOtop._comment_re.match(line):
-                    destination.write(line)
+            for setting in self.geotop_inpts:
+                if GEOtop._comment_re.match(setting):
+                    destination.write(setting)
                 else:
                     try:
-                        key, value = GEOtop.read_setting(line)
+                        key, value = GEOtop.read_setting(setting)
 
                         if key in settings and value != settings[key]:
                             destination.write(f"! GEOtoPy: {key} overwritten, "
                                               f"was {value}\n")
-                            line = GEOtop.print_setting(key, settings[key])
-                        else:
-                            line = GEOtop.print_setting(key, value)
+                            setting = GEOtop.print_setting(key, settings[key])
 
-                        destination.write(line)
-                        del settings[key]
+                            del settings[key]
+                        elif key not in settings:
+                            destination.write(f"! GEOtoPy: {key} deleted")
+                            setting = "!" + setting
+
+                        destination.write(setting)
+
 
                     except ValueError as err:
                         destination.write(f"! GEOtoPy: {err}\n")
-                        destination.write(line)
+                        destination.write(setting)
 
             if settings:
                 destination.write("\n! Settings added by GEOtoPy\n")
                 for key, value in settings.items():
                     try:
-                        line = GEOtop.print_setting(key, value)
-                        destination.write(line)
+                        setting = GEOtop.print_setting(key, value)
+                        destination.write(setting)
                     except ValueError as err:
                         destination.write(f"! GEOtoPy: {err}\n")
                         destination.write(f"{key} = {value}\n")

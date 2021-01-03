@@ -51,4 +51,3 @@ if __name__ == "__main__":
     toc = time.perf_counter()
     print(f"Elapsed time: {toc - tic:.2f} seconds.")
     print()
-
