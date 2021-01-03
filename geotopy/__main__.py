@@ -1,5 +1,4 @@
 import argparse
-import os
 import shutil
 import subprocess
 import time
@@ -11,6 +10,8 @@ parser.add_argument("inputs_dir",
                     help="Input directory, containing geotop.inpts "
                          "and other input files.")
 parser.add_argument("outputs_dir",
+                    nargs='?',
+                    default=None,
                     help="Working directory, where the inputs will be copied "
                          "and GEOtop will run. Must be different from "
                          "inputs_dir.")
@@ -24,14 +25,10 @@ class Model(GEOtop):
             print("==== Input files: ====")
             subprocess.run(['tree', '-D', self.inputs_dir])
             print()
+        self.clone_inputs_to(working_dir)
 
         print("==== Overriding geotop.inpts ====\n")
-        geotop_inpts = os.path.join(working_dir, 'geotop.inpts')
-        os.remove(geotop_inpts)
-        with open(geotop_inpts, 'w') as settings:
-            settings.write("! GEOtop input file written by GEOtoPy\n")
-            for key, value in self.settings.items():
-                settings.write(self.print_setting(key, value))
+        self.patch_settings_with(working_dir, kwargs)
 
         print("==== Running GEOtop... ====\n")
 
@@ -47,7 +44,10 @@ class Model(GEOtop):
 tic = time.perf_counter()
 try:
     model = Model(cli_args.inputs_dir)
-    model.eval(cli_args.outputs_dir)
+    if working_dir := cli_args.outputs_dir:
+        model.eval(working_dir)
+    else:
+        model()
 except Exception:
     raise
 toc = time.perf_counter()
