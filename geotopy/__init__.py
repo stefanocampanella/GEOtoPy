@@ -85,7 +85,8 @@ class GEOtop(ABC):
 
         if store:
             self.inputs = io.BytesIO()
-            with tarfile.open(fileobj=self.inputs, mode=f'w:{compression}') as tar:
+            mode = f"w:{compression if compression else ''}"
+            with tarfile.open(fileobj=self.inputs, mode=mode) as tar:
                 tar.add(self.inputs_path, arcname='.')
             self.inputs.seek(io.SEEK_SET)
         else:
@@ -212,19 +213,19 @@ class GEOtop(ABC):
         else:
             shutil.copytree(self.inputs_path, working_dir, dirs_exist_ok=True)
 
-    def patch_settings_file(self, working_dir):
+    def patch_geotop_inpts_file(self, working_dir, settings):
         """ Patch the geotop.inpts file within working_dir with current
         settings.
 
         :param working_dir:
+        :param settings:
         :return:
         """
 
-        settings = self.settings.copy()
-
         destination_path = working_dir / 'geotop.inpts'
         with open(destination_path, 'w') as destination:
-            destination.write(f"! GEOtop input file written by GEOtoPy {datetime.now().strftime('%x %X')}\n")
+            destination.write("! GEOtop input file written by GEOtoPy "
+                              f"{datetime.now().strftime('%x %X')}\n")
             for line in self.geotop_inpts:
                 if GEOtop._comment_re.match(line):
                     destination.write(line)
@@ -233,7 +234,8 @@ class GEOtop(ABC):
                         key, value = GEOtop.read_setting(line)
 
                         if key in settings and value != settings[key]:
-                            destination.write(f"! GEOtoPy: {key} overwritten, was {value}\n")
+                            destination.write(f"! GEOtoPy: {key} overwritten, "
+                                              f"was {value}\n")
                             line = GEOtop.print_setting(key, settings[key])
                         else:
                             line = GEOtop.print_setting(key, value)

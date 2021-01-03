@@ -1,6 +1,4 @@
 import argparse
-import shutil
-import subprocess
 import time
 from . import GEOtop
 
@@ -21,31 +19,36 @@ cli_args = parser.parse_args()
 class Model(GEOtop):
 
     def preprocess(self, working_dir, *args, **kwargs):
-        if shutil.which('tree'):
-            print("==== Input files: ====")
-            subprocess.run(['tree', '-D', self.inputs_path])
-            print()
+        print("==== Copying input files to working directory... ====")
+        tic = time.perf_counter()
         self.clone_inputs_to(working_dir)
+        toc = time.perf_counter()
+        print(f"Elapsed time: {toc - tic:.2f} seconds.")
 
-        print("==== Running GEOtop... ====\n")
+        print("==== Patching `geotop.inpts` file... ====")
+        settings = self.settings.copy()
+        settings.update(kwargs)
+        self.patch_geotop_inpts_file(working_dir, settings)
+
+        print("==== Running GEOtop... ====")
 
     def postprocess(self, working_dir):
-        if shutil.which('tree'):
-            print(f"==== Output files: ====")
-            subprocess.run(['tree', '-D', working_dir])
-            print()
-
         return None
 
 
-tic = time.perf_counter()
-try:
+if __name__ == "__main__":
+    print("==== Storing files and parsing `geotop.inpts`... ====")
+    tic = time.perf_counter()
     model = Model(cli_args.inputs_path)
+    toc = time.perf_counter()
+    print(f"Elapsed time: {toc - tic:.2f} seconds.")
+
+    tic = time.perf_counter()
     if working_dir := cli_args.working_dir:
-        model.run_in(working_dir)
+        model.run_in(working_dir, LSAI=0)
     else:
-        model()
-except Exception:
-    raise
-toc = time.perf_counter()
-print(f"Wall time: {toc - tic:.2f} seconds.")
+        model(LSAI=0)
+    toc = time.perf_counter()
+    print(f"Elapsed time: {toc - tic:.2f} seconds.")
+    print()
+
