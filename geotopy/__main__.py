@@ -19,16 +19,12 @@ cli_args = parser.parse_args()
 class Model(GEOtop):
 
     def preprocess(self, working_dir, *args, **kwargs):
-        print("==== Copying input files to working directory... ====")
+        print("==== Cloning files and patching `geotop.inpts`... ====")
         tic = time.perf_counter()
         self.clone_into(working_dir)
+        self.patch_inpts_file(working_dir, kwargs)
         toc = time.perf_counter()
         print(f"Elapsed time: {toc - tic:.2f} seconds.")
-
-        print("==== Patching `geotop.inpts` file... ====")
-        settings = self.settings.copy()
-        settings.update(kwargs)
-        self.patch_inpts_file(working_dir, settings)
 
         print("==== Running GEOtop... ====")
 
