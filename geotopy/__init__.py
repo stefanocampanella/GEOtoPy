@@ -99,16 +99,15 @@ class GEOtop(ABC):
         elif not os.access(geotop_inpts_path, os.R_OK):
             raise PermissionError(f"{geotop_inpts_path} is not readable.")
         else:
-            with open(geotop_inpts_path, 'r') as geotop_inpts_file:
-                self.geotop_inpts = geotop_inpts_file.readlines()
             self.settings = dict()
-            for line in self.geotop_inpts:
-                if not GEOtop._comment_re.match(line):
-                    try:
-                        key, value = GEOtop.read_setting(line)
-                        self.settings[key] = value
-                    except ValueError as err:
-                        warnings.warn(f"{err} Skipping.")
+            with open(geotop_inpts_path, 'r') as geotop_inpts_file:
+                while line := geotop_inpts_file.readline():
+                    if not GEOtop._comment_re.match(line):
+                        try:
+                            key, value = GEOtop.read_setting(line)
+                            self.settings[key] = value
+                        except ValueError as err:
+                            warnings.warn(f"{err} Skipping.")
 
         # exe must be an executable file
         exe = Path(exe) if exe else GEOtop._geotop_exe
@@ -199,7 +198,7 @@ class GEOtop(ABC):
             sim = self.run_in(tmpdir, *args, **kwargs)
         return sim
 
-    def clone_inputs_to(self, working_dir):
+    def clone_into(self, working_dir):
         """ Copy the content of inputs_path into working_dir, using the its
         internal (compressed) copy of the files if available.
         
@@ -212,53 +211,6 @@ class GEOtop(ABC):
             self.inputs.seek(io.SEEK_SET)
         else:
             shutil.copytree(self.inputs_path, working_dir, dirs_exist_ok=True)
-
-    def patch_geotop_inpts_file(self, working_dir, settings):
-        """ Patch the geotop.inpts file within working_dir with current
-        settings.
-
-        :param working_dir:
-        :param settings:
-        :return:
-        """
-        settings = settings.copy()
-        destination_path = working_dir / 'geotop.inpts'
-        with open(destination_path, 'w') as destination:
-            destination.write("! GEOtop input file written by GEOtoPy "
-                              f"{datetime.now().strftime('%x %X')}\n")
-            for setting in self.geotop_inpts:
-                if GEOtop._comment_re.match(setting):
-                    destination.write(setting)
-                else:
-                    try:
-                        key, value = GEOtop.read_setting(setting)
-
-                        if key in settings and value != settings[key]:
-                            destination.write(f"! GEOtoPy: {key} overwritten, "
-                                              f"was {value}\n")
-                            setting = GEOtop.print_setting(key, settings[key])
-
-                            del settings[key]
-                        elif key not in settings:
-                            destination.write(f"! GEOtoPy: {key} deleted")
-                            setting = "!" + setting
-
-                        destination.write(setting)
-
-
-                    except ValueError as err:
-                        destination.write(f"! GEOtoPy: {err}\n")
-                        destination.write(setting)
-
-            if settings:
-                destination.write("\n! Settings added by GEOtoPy\n")
-                for key, value in settings.items():
-                    try:
-                        setting = GEOtop.print_setting(key, value)
-                        destination.write(setting)
-                    except ValueError as err:
-                        destination.write(f"! GEOtoPy: {err}\n")
-                        destination.write(f"{key} = {value}\n")
 
     @staticmethod
     def read_setting(line):
@@ -320,3 +272,71 @@ class GEOtop(ABC):
                               f" in the GEOtoPy repository with a PR.")
                 line = f"{key} = {value}\n"
         return line
+
+    @staticmethod
+    def dump_to(settings, destination):
+        """ Dump settings to destination file
+
+        :param settings:
+        :param destination:
+        :return:
+        """
+        for keyword, value in settings.items():
+            if value:
+                line = GEOtop.print_setting(keyword, value)
+                destination.write(line)
+
+    @staticmethod
+    def dump_in(settings, working_dir):
+        """ Dump settings in working_dir/geotop.inpts
+
+        :param settings:
+        :param working_dir:
+        :return:
+        """
+        destination_path = working_dir / 'geotop.inpts'
+        with open(destination_path, 'w') as destination:
+            GEOtop.dump_to(settings, destination)
+
+    @staticmethod
+    def patch_inpts_file(working_dir, diff):
+        """ Patch the geotop.inpts file within working_dir with current
+        settings.
+
+        :param working_dir:
+        :param diff:
+        :return:
+        """
+        diff = diff.copy()
+        geotop_inpts = working_dir / 'geotop.inpts'
+
+        with open(geotop_inpts, 'r') as source:
+            text_settings = source.readlines()
+
+        with open(geotop_inpts, 'w') as destination:
+            destination.write("! GEOtop input file written by GEOtoPy "
+                              f"{datetime.now().strftime('%x %X')}\n")
+            for line in text_settings:
+                if GEOtop._comment_re.match(line):
+                    destination.write(line)
+                else:
+                    try:
+                        key, value = GEOtop.read_setting(line)
+                        if key in diff and value != diff[key]:
+                            destination.write(f"! GEOtoPy: {key} overwritten, "
+                                              f"was {value}\n")
+                            line = GEOtop.print_setting(key, diff[key])
+                            del diff[key]
+                        elif key in diff and diff[key] is None:
+                            destination.write(f"! GEOtoPy: {key} deleted")
+                            line = "!" + line
+
+                        destination.write(line)
+
+                    except ValueError as err:
+                        destination.write(f"! GEOtoPy: {err}\n")
+                        destination.write(line)
+
+            if diff:
+                destination.write("\n! Settings added by GEOtoPy\n")
+                GEOtop.dump_to(diff, destination)

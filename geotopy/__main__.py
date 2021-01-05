@@ -21,14 +21,14 @@ class Model(GEOtop):
     def preprocess(self, working_dir, *args, **kwargs):
         print("==== Copying input files to working directory... ====")
         tic = time.perf_counter()
-        self.clone_inputs_to(working_dir)
+        self.clone_into(working_dir)
         toc = time.perf_counter()
         print(f"Elapsed time: {toc - tic:.2f} seconds.")
 
         print("==== Patching `geotop.inpts` file... ====")
         settings = self.settings.copy()
         settings.update(kwargs)
-        self.patch_geotop_inpts_file(working_dir, settings)
+        self.patch_inpts_file(working_dir, settings)
 
         print("==== Running GEOtop... ====")
 
