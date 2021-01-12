@@ -299,10 +299,11 @@ class GEOtop(ABC):
             GEOtop.dump_to(settings, destination)
 
     @staticmethod
-    def patch_inpts_file(working_dir, diff):
+    def patch_inpts_file(working_dir, diff, annotations=True):
         """ Patch the geotop.inpts file within working_dir with current
         settings.
 
+        :param annotations:
         :param working_dir:
         :param diff:
         :return:
@@ -322,21 +323,25 @@ class GEOtop(ABC):
                 else:
                     try:
                         key, value = GEOtop.read_setting(line)
-                        if key in diff and value != diff[key]:
-                            destination.write(f"! GEOtoPy: {key} overwritten, "
-                                              f"was {value}\n")
-                            line = GEOtop.print_setting(key, diff[key])
+                        if key in diff:
+                            if diff[key] is None:
+                                if annotations:
+                                    destination.write(f"! GEOtoPy: {key} deleted, "
+                                                      f"was {value}.\n")
+                            elif diff[key] != value:
+                                if annotations:
+                                    destination.write(f"! GEOtoPy: {key} overwritten, "
+                                                      f"was {value}.\n")
+                                line = GEOtop.print_setting(key, diff[key])
                             del diff[key]
-                        elif key in diff and diff[key] is None:
-                            destination.write(f"! GEOtoPy: {key} deleted")
-                            line = "!" + line
 
                         destination.write(line)
 
                     except ValueError as err:
-                        destination.write(f"! GEOtoPy: {err}\n")
-                        destination.write(line)
+                        if annotations:
+                            destination.write(f"! GEOtoPy: {err}\n")
 
             if diff:
-                destination.write("\n! Settings added by GEOtoPy\n")
+                if annotations:
+                    destination.write("\n! Settings added by GEOtoPy\n")
                 GEOtop.dump_to(diff, destination)
