@@ -99,15 +99,7 @@ class GEOtop(ABC):
         elif not os.access(geotop_inpts_path, os.R_OK):
             raise PermissionError(f"{geotop_inpts_path} is not readable.")
         else:
-            self.settings = dict()
-            with open(geotop_inpts_path, 'r') as geotop_inpts_file:
-                while line := geotop_inpts_file.readline():
-                    if not GEOtop._comment_re.match(line):
-                        try:
-                            key, value = GEOtop.read_setting(line)
-                            self.settings[key] = value
-                        except ValueError as err:
-                            warnings.warn(f"{err} Skipping.")
+            self.settings = GEOtop.read_settings(geotop_inpts_path)
 
         # exe must be an executable file
         exe = Path(exe) if exe else GEOtop._geotop_exe
@@ -245,6 +237,25 @@ class GEOtop(ABC):
                               f" consider updating \'keywords.json\' file"
                               f" in the GEOtoPy repository with a PR.")
         return key, value
+
+    @staticmethod
+    def read_settings(geotop_inpts_path):
+        """ Read a geotop.inpts file and return a dictionary of settings.
+        Warn the user if there are malformed lines.
+
+        :param geotop_inpts_path:
+        :return:
+        """
+        settings = {}
+        with open(geotop_inpts_path, 'r') as geotop_inpts_file:
+            while line := geotop_inpts_file.readline():
+                if not GEOtop._comment_re.match(line):
+                    try:
+                        key, value = GEOtop.read_setting(line)
+                        settings[key] = value
+                    except ValueError as err:
+                        warnings.warn(f"{err} Skipping.")
+        return settings
 
     @staticmethod
     def print_setting(key, value):
