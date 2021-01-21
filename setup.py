@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="geotopy",
-    version="0.5.1.dev0",
+    version="0.5.2.dev0",
     author="Stefano Campanella",
     author_email="scampane@sissa.it",
     description="Paper-thin wrapper to work with GEOtop from Python",
