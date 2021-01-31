@@ -20,6 +20,7 @@ import subprocess
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
+from multiprocessing import Lock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -89,6 +90,7 @@ class GEOtop(ABC):
             with tarfile.open(fileobj=self.inputs, mode=mode) as tar:
                 tar.add(self.inputs_path, arcname='.')
             self.inputs.seek(io.SEEK_SET)
+            self.lock = Lock()
         else:
             self.inputs = None
 
@@ -198,9 +200,10 @@ class GEOtop(ABC):
         :return: 
         """
         if self.inputs:
-            with tarfile.open(fileobj=self.inputs, mode='r') as tar:
-                tar.extractall(path=working_dir)
-            self.inputs.seek(io.SEEK_SET)
+            with self.lock:
+                with tarfile.open(fileobj=self.inputs, mode='r') as tar:
+                    tar.extractall(path=working_dir)
+                self.inputs.seek(io.SEEK_SET)
         else:
             shutil.copytree(self.inputs_path, working_dir, dirs_exist_ok=True)
 
